@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Textout via text2soled is duplicated with different paths becuase
-#different linux systems exist
+# Textout via text2soled is duplicated with different paths because multiple versions of the C15 Linux exist
 
 systemctl stop playground
 
