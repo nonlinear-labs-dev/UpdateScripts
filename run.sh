@@ -13,8 +13,7 @@ function print2soled {
   /nonlinear/text2soled/text2soled $Text 10 80
 }
 
-/nonlinear/text2soled/text2soled 'Starting Update' 10 80
-/nonlinear/text2soled 'Starting Update' 10 80
+print2soled "Starting Update"
 
 if [ -d "/update/system/" ]; then
   print2soled "TODO System Update Text"
