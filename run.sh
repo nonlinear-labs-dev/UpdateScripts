@@ -15,27 +15,35 @@ function print2soled {
 print2soled "Starting Update"
 
 if [ -d "/update/system/" ]; then
-  print2soled "TODO System Update Text"
+  print2soled "Operating System Update"
   chmod +x /update/system/system_update.sh
   /bin/sh /update/system/system_update.sh
 fi
 
 if [ -d "/update/LPC/" ]; then
-  print2soled "TODO LPC Update Text"
+  print2soled "Firmware Update"
   chmod +x /update/LPC/lpc_update.sh
   /bin/sh /update/LPC/lpc_update.sh /update/LPC/blob.bin
 fi
 
 if [ -d "/update/EPC/" ]; then
-  print2soled "TODO EPC Update Text"
+  print2soled "Audio Engine Update"
   chmod +x /update/EPC/epc_update.sh
   /bin/sh /update/EPC/epc_update.sh
 fi
 
 if [ -d "/update/BBB/" ]; then
-  print2soled "TODO BBB Update Text"
+  print2soled "UI Software Update"
   chmod +x /update/BBB/bbb_update.sh
   /bin/sh /update/BBB/bbb_update.sh
+fi
+
+if [ -d "/update/uboot/" ]; then
+	print2soled "U-Boot Update"
+	chmod +x /update/uboot/bbb-tools.sh
+	chmod +x /update/uboot/update-uboot.sh
+	/bin/sh /update/uboot/update-uboot.sh
+        cp /update/uboot/*.log /mnt/usb-stick	
 fi
 
 systemctl stop playground
