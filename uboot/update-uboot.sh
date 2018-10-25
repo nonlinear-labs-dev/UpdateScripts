@@ -1,12 +1,10 @@
 #!/bin/sh
 
+set -x
+
 BASE_DIR=$(dirname "$0")
 
 source ${BASE_DIR}/bbb-tools.sh
-
-BOOTLOADER_DIR="${BASE_DIR}"
-LOGFILE_STDERR="$0.stderr.log"
-LOGFILE_STDOUT="$0.stdout.log"
 
 BBB_REV=$(bbb_get_rev)
 
@@ -28,12 +26,7 @@ EMMC_NEW_UUID="ea9ed055-84c5-4c76-b8c3-aba0b9eeb083"
 SFDISK_CMD_STRING=",,L,\n"
 DO_BACKUP=true
 
-echo "######################################################################" >> ${LOGFILE_STDERR}
-echo "######################################################################" >> ${LOGFILE_STDOUT}
-
 printf "\n"
-printf "Logfile stderr:  %s\n" ${LOGFILE_STDERR}
-printf "Logfile stdout:  %s\n" ${LOGFILE_STDOUT}
 printf "BBB Rev:         %s\n" ${BBB_REV}
 printf "EMMC Device:     %s\n" ${EMMC_DEVICE}
 printf "EMMC Root Part.: %s\n" ${EMMC_ROOT_PARTITION}
@@ -46,22 +39,23 @@ printf "\n"
 # 0: Prepare some stuff
 #######################
 printf "0: Preparing mmc and emmc for changes..."
-mkdir -p ${EMMC_MOUNT_POINT} ${MMC_MOUNT_POINT} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR}
+mkdir -p ${EMMC_MOUNT_POINT} ${MMC_MOUNT_POINT}
+systemctl disable internalstorage.mount
 sync
 printf "Done\n"
 
 # 1: Backup all data we might have on emmc to mmc
 #################################################
 if [ "${DO_BACKUP}" = true ]; then
-	bbb_mount_if_unmounted ${EMMC_DEVICE}p${EMMC_ROOT_PARTITION} ${EMMC_MOUNT_POINT} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR}
+	bbb_mount_if_unmounted ${EMMC_DEVICE}p${EMMC_ROOT_PARTITION} ${EMMC_MOUNT_POINT}
 	if [ -d ${EMMC_MOUNT_POINT}/preset-manager ]; then
 		printf "1: Backup data from emmc to mmc..."
 
 		if ! [ "${MMC_MOUNT_POINT}" = "/" ]; then
-			bbb_mount_if_unmounted ${MMC_DEVICE}p${MMC_ROOT_PARTITION} ${MMC_MOUNT_POINT} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR}
+			bbb_mount_if_unmounted ${MMC_DEVICE}p${MMC_ROOT_PARTITION} ${MMC_MOUNT_POINT}
 		fi
 
-		cp -Rf ${EMMC_MOUNT_POINT}/preset-manager ${MMC_MOUNT_POINT} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR} || error "Can not backup preset-manager"
+		cp -Rf ${EMMC_MOUNT_POINT}/preset-manager ${MMC_MOUNT_POINT}
 
 		if ! [ "${MMC_MOUNT_POINT}" = "/" ]; then
 			bbb_unmount_if_mounted ${MMC_MOUNT_POINT}
@@ -74,26 +68,27 @@ if [ "${DO_BACKUP}" = true ]; then
 	bbb_unmount_if_mounted ${EMMC_MOUNT_POINT}
 fi
 
+
 # 2: Rewrite partition on emmc
 ##############################
 printf "2: Write new partition table to emmc..."
 bbb_unmount_if_mounted ${EMMC_DEVICE}p${EMMC_ROOT_PARTITION}
-wipefs -a ${EMMC_DEVICE} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR} || error "Can not wipefs on ${EMMC_DEVICE}"
-echo -e ${SFDISK_CMD_STRING} | sfdisk --force ${EMMC_DEVICE} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR} || error "Can not create new partition table"
+wipefs -a ${EMMC_DEVICE}
+echo -e ${SFDISK_CMD_STRING} | sfdisk --force ${EMMC_DEVICE}
 sync
-yes | mkfs.ext3 -U ${EMMC_NEW_UUID} ${EMMC_DEVICE}p${EMMC_ROOT_PARTITION} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR} || error "Can not create new ext3 filesystem"
-hdparm -z "${EMMC_DEVICE}" 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR}
+EMMC_ROOT_PARTITION=1 # Starting from here, rootpart is 1
+yes | mkfs.ext3 -U ${EMMC_NEW_UUID} ${EMMC_DEVICE}p${EMMC_ROOT_PARTITION}
+hdparm -z "${EMMC_DEVICE}"
 printf "Done\n"
-
 
 # 3: Update bootloader
 ######################
 printf "3: Update bootloader..."
-[[ -f ${BOOTLOADER_DIR}/MLO ]] || error "Can not find ${BOOTLOADER_DIR}/MLO!"
-[[ -f ${BOOTLOADER_DIR}/u-boot.img ]] || error "Can not find ${BOOTLOADER_DIR}/u-boot.img"
-dd if=${BOOTLOADER_DIR}/MLO of=${EMMC_DEVICE} bs=512 seek=256 count=256 conv=notrunc 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR} || error "Can not diskdump MLO on ${EMMC_DEVICE}"
+[[ -f ${BASE_DIR}/MLO ]] || error "Can not find ${BASE_DIR}/MLO!"
+[[ -f ${BASE_DIR}/u-boot.img ]] || error "Can not find ${BASE_DIR}/u-boot.img"
+dd if=${BASE_DIR}/MLO of=${EMMC_DEVICE} bs=512 seek=256 count=256 conv=notrunc
 sync
-dd if=${BOOTLOADER_DIR}/u-boot.img of=${EMMC_DEVICE} bs=512 seek=768 count=1024 conv=notrunc 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR} || error "Can not diskdump u-boot.bon on ${EMMC_DEVICE}"
+dd if=${BASE_DIR}/u-boot.img of=${EMMC_DEVICE} bs=512 seek=768 count=1024 conv=notrunc
 sync
 printf "Done.\n"
 
@@ -101,14 +96,13 @@ printf "Done.\n"
 ###################
 if [ "${DO_BACKUP}" = true ]; then
 	printf "4: Restoring backup..."
-	bbb_mount_if_unmounted ${EMMC_DEVICE}p${EMMC_ROOT_PARTITION} ${EMMC_MOUNT_POINT} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR}
+	bbb_mount_if_unmounted ${EMMC_DEVICE}p${EMMC_ROOT_PARTITION} ${EMMC_MOUNT_POINT}
 
 	if ! [ "${MMC_MOUNT_POINT}" = "/" ]; then
-		bbb_mount_if_unmounted ${MMC_DEVICE}p${MMC_ROOT_PARTITION} ${MMC_MOUNT_POINT} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR}
+		bbb_mount_if_unmounted ${MMC_DEVICE}p${MMC_ROOT_PARTITION} ${MMC_MOUNT_POINT}
 	fi
 
-	cp -Rf ${MMC_MOUNT_POINT}/preset-manager ${EMMC_MOUNT_POINT} 1>>${LOGFILE_STDOUT} 2>>${LOGFILE_STDERR} || error "Can not restore backup from ${MMC_MOUNT_POINT}"
-	rm -Rf ${MMC_MOUNT_POINT}/preset-manager || error "Can not remote backup from ${MMC_MOUNT_POINT}"
+	mv ${MMC_MOUNT_POINT}/preset-manager ${EMMC_MOUNT_POINT}
 	sync
 
 	if ! [ "${MMC_MOUNT_POINT}" = "/" ]; then
@@ -119,4 +113,7 @@ if [ "${DO_BACKUP}" = true ]; then
 	printf "Done.\n"
 fi
 
+cp -v ${BASE_DIR}/internalstorage.mount /etc/systemd/system/internalstorage.mount
+echo "cp -v ${BASE_DIR}/internalstorage.mount /etc/systemd/system/internalstorage.mount"
+systemctl enable internalstorage.mount
 

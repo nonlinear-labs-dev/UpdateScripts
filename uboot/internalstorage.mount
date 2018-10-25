@@ -1,0 +1,10 @@
+[Unit]
+Description = internal storage
+
+[Mount]
+What = /dev/disk/by-uuid/ea9ed055-84c5-4c76-b8c3-aba0b9eeb083
+Where = /internalstorage
+Type = ext4
+
+[Install]
+WantedBy = multi-user.target
