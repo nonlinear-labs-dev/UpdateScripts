@@ -1,30 +1,38 @@
 #!/bin/sh
 
-#the origin and dest. filenames
-origin="/update/EPC/Phase22Renderer.ens"
-destination="/mnt/windows/Phase22Renderer.ens"
-pingcount=100
-#loop pinging to wait for the EPC to startup
-while [ $pingcount -ne 0 ] ; do
-  ping -c 1 192.168.10.10
-  returncode=$?
-  if [ $returncode -eq 0 ] ; then
-      ((pingcount = 1))
-  fi
-  echo $((pingcount = pingcount - 1))
-done
-# when the host is reachable via ping-status is 0
-if [ $returncode -eq 0 ]; then
-  #create the mountpoint if nonexistent
-  if [ ! -d "/mnt/windows" ]; then
-    mkdir /mnt/windows
-  fi
-  #unmount to prevent "device is busy"
-  if [ grep -qs '/mnt/windows' /proc/mounts ]; then
-    umount /mnt/windows
-  fi
-  #mount the windows-drive
-  mount.cifs //192.168.10.10/update /mnt/windows -o user=TEST,password=TEST
-  #copy the ensemble
-  cp "$origin" "$destination"
+TIMEOUT=60
+EPC_IP=192.168.10.10
+CURRENT_PATH="$PWD"
+
+executeAsRoot() {
+    rm /root/.ssh/known_hosts 1>&2 > /dev/null;
+    echo "sscl" | /nonlinear/utilities/sshpass -p 'sscl' ssh -o ConnectionAttempts=1 -o ConnectTimeout=1 -o StrictHostKeyChecking=no sscl@$IP \
+        "sudo -S /bin/bash -c '$1' 1>&2 > /dev/null"
+    return $?
+}
+
+wait4response() {
+    COUNTER=0
+    while true; do
+        rm /root/.ssh/known_hosts 1>&2 > /dev/null;
+        executeAsRoot "exit"
+        [ $? -eq 0 ] && break
+
+        sleep 1
+        ((COUNTER++))
+        echo "awaiting reboot ... $COUNTER/$TIMEOUT"
+        [ $COUNTER -eq $TIMEOUT ] && { report_and_quit "E45 ePC update: Reboot taking too long... timed out" "45"; break; }
+    done
+}
+
+kill $(pidof python)
+cd $CURRENT_PATH
+touch $CURRENT_PATH/server.log
+python -m SimpleHTTPServer 8000 &> $CURRENT_PATH/server.log & PYTHON_PID=$!
+executeAsRoot "sudo reboot"
+wait4response
+kill "${PYTHON_PID}" &> /dev/null
+if cat $CURRENT_PATH/server.log | grep "GET /update.tar HTTP/1.1"; then
+   rm $CURRENT_PATH/server.log
+   echo "ePC update successfull ..."
 fi

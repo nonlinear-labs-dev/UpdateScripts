@@ -5,6 +5,7 @@ BASE_DIR=$(dirname "$0")
 # Textout via text2soled is duplicated with different paths because multiple versions of the C15 Linux exist
 
 systemctl stop playground
+systemctl stop bbbb
 
 function print2soled {
 	Text=$1
@@ -16,36 +17,25 @@ function print2soled {
 
 print2soled "Starting Update"
 
-if [ -d "/update/system/" ]; then
-	print2soled "Operating System Update"
-	chmod +x /update/system/system_update.sh
-	/bin/sh /update/system/system_update.sh
+if [ -d "$BASE_DIR/LPC/" ]; then
+        print2soled "LPC Update"
+        chmod +x $BASE_DIR/LPC/lpc_update.sh
+        /bin/sh $BASE_DIR/LPC/lpc_update.sh $BASE_DIR/LPC/blob.bin
 fi
 
-if [ -d "/update/LPC/" ]; then
-	print2soled "Firmware Update"
-	chmod +x /update/LPC/lpc_update.sh
-	/bin/sh /update/LPC/lpc_update.sh /update/LPC/blob.bin
+if [ -d "$BASE_DIR/EPC/" ]; then
+        print2soled "ePC Update"
+        chmod +x $BASE_DIR/EPC/epc_update.sh
+        /bin/sh $BASE_DIR/EPC/epc_update.sh
 fi
 
-if [ -d "/update/EPC/" ]; then
-	print2soled "Audio Engine Update"
-	chmod +x /update/EPC/epc_update.sh
-	/bin/sh /update/EPC/epc_update.sh
+if [ -d "$BASE_DIR/BBB/" ]; then
+        print2soled "BBB Update"
+        chmod +x $BASE_DIR/BBB/bbb_update.sh
+        /bin/sh $BASE_DIR/BBB/bbb_update.sh
 fi
 
-if [ -d "/update/BBB/" ]; then
-	print2soled "UI Software Update"
-	chmod +x /update/BBB/bbb_update.sh
-	/bin/sh /update/BBB/bbb_update.sh
-fi
+systemctl restart playground
+systemctl restart bbbb
 
-if [ -d "/update/uboot/" ]; then
-	print2soled "U-Boot Update"
-	chmod +x /update/uboot/update-uboot.sh
-	/bin/sh /update/uboot/update-uboot.sh 1>${BASE_DIR}/uboot.stdout.log 2>${BASE_DIR}/uboot.stderr.log
-        cp ${BASE_DIR}/*.log /mnt/usb-stick
-fi
-
-systemctl stop playground
 print2soled "Done, please Restart!"
