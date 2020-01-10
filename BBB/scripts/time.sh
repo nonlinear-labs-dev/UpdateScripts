@@ -7,7 +7,7 @@
 # Date:		16.10.2019
 
 getEPCtime(){
-        /nonlinear/sshpass/sshpass -p 'sscl' ssh sscl@192.168.10.10 'date "+%F %T"'
+        /nonlinear/utilities/sshpass -p 'sscl' ssh sscl@192.168.10.10 'date "+%F %T"'
 }
 
 date "+%F %T" -s "$(getEPCtime)"

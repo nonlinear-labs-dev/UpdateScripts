@@ -6,7 +6,7 @@ CURRENT_PATH="$PWD"
 
 executeAsRoot() {
     rm /root/.ssh/known_hosts 1>&2 > /dev/null;
-    echo "sscl" | /nonlinear/utilities/sshpass -p 'sscl' ssh -o ConnectionAttempts=1 -o ConnectTimeout=1 -o StrictHostKeyChecking=no sscl@$IP \
+    echo "sscl" | /nonlinear/utilities/sshpass -p 'sscl' ssh -o ConnectionAttempts=1 -o ConnectTimeout=1 -o StrictHostKeyChecking=no sscl@$EPC_IP \
         "sudo -S /bin/bash -c '$1' 1>&2 > /dev/null"
     return $?
 }
@@ -14,7 +14,6 @@ executeAsRoot() {
 wait4response() {
     COUNTER=0
     while true; do
-        rm /root/.ssh/known_hosts 1>&2 > /dev/null;
         executeAsRoot "exit"
         [ $? -eq 0 ] && break
 
@@ -26,13 +25,14 @@ wait4response() {
 }
 
 kill $(pidof python)
-cd $CURRENT_PATH
-touch $CURRENT_PATH/server.log
-python -m SimpleHTTPServer 8000 &> $CURRENT_PATH/server.log & PYTHON_PID=$!
+cd $CURRENT_PATH/EPC
+rm ./server.log
+touch ./server.log
+python -m SimpleHTTPServer 8000 &> ./server.log & PYTHON_PID=$!
 executeAsRoot "sudo reboot"
 wait4response
 kill "${PYTHON_PID}" &> /dev/null
-if cat $CURRENT_PATH/server.log | grep "GET /update.tar HTTP/1.1"; then
-   rm $CURRENT_PATH/server.log
+if cat ./server.log | grep "GET /update.tar HTTP/1.1"; then
+   rm ./server.log
    echo "ePC update successfull ..."
 fi
