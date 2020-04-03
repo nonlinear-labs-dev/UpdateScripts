@@ -87,6 +87,16 @@ epc_upgrade() {
             return 1
         fi
 
+        if [ $(findmnt -nbo AVAIL -T /mnt/usb-stick/) -lt 2400000000 ]; then
+            printf "not enough space on the usb stick" >> /update/errors.log
+            return 1
+        fi
+
+        if [ $(findmnt -no FSTYPE -T /mnt/usb-stick/) != 'vfat' ]; then
+            printf "usb stick is not of the right format" >> /update/errors.log
+            return 1
+        fi
+
         pretty "" "this might take a while..." "get a snack!" "" "this might take a while..." "get a snack!"
         mkdir /mnt/usb-stick/upgrade
         tar -C /mnt/usb-stick/upgrade -xvf /mnt/usb-stick/nonlinear-c15-major-upgrade.tar
@@ -103,6 +113,7 @@ epc_upgrade() {
 
         pretty "" "unpacking files..." "$MSG_DO_NOT_SWITCH_OFF" "unpacking files..." "$MSG_DO_NOT_SWITCH_OFF"
         tar -C /mnt/usb-stick/upgrade -xvf /mnt/usb-stick/upgrade/win2lin.tar
+        rm -rf /mnt/usb-stick/upgrade/win2lin.tar
         cd /mnt/usb-stick/upgrade
         chmod +x ./upgrade50Plus.sh
 
