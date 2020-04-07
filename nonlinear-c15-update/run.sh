@@ -57,12 +57,6 @@ epc_pull_update() {
     return $?
 }
 
-# TODO:
-#     check if win2lin is needed
-#     check if win2lin is possible
-#     check if major-upgrade.tar is present and not corrupt (checksum)
-#     upgrade
-
 executeAsRoot() {
     echo "sscl" | /update/utilities/sshpass -p 'sscl' ssh -o ConnectionAttempts=1 -o ConnectTimeout=1 -o StrictHostKeyChecking=no sscl@$EPC_IP "sudo -S /bin/bash -c '$1' 1>&2 > /dev/null"
     return $?
