@@ -93,6 +93,12 @@ epc_upgrade() {
     pretty "" "Upgrading C15..." "$MSG_DO_NOT_SWITCH_OFF" "Upgrading C15..." "$MSG_DO_NOT_SWITCH_OFF"
 
     if ! executeAsRoot "exit"; then
+
+        if ! ping -w 10 $EPC_IP 1>&2 > /dev/null; then
+            report "" "Cannot ping OS..." "Please retry!"
+            return 1
+        fi
+
         if ! executeOnWin "mountvol p: /s & p: & DIR P:\nonlinear"; then      
             report "" "Upgrade not possible..." "Contact Nonlinear Labs!"
             return 1
@@ -144,7 +150,6 @@ epc_upgrade() {
     return 0
 }
 
-
 epc_update() {
     pretty "" "$MSG_UPDATING_EPC" "$MSG_DO_NOT_SWITCH_OFF" "$MSG_UPDATING_EPC" "$MSG_DO_NOT_SWITCH_OFF"
 
@@ -174,7 +179,6 @@ epc_update() {
     sleep 2
     return 0
 }
-
 
 bbb_update() {
     pretty "" "$MSG_UPDATING_BBB" "$MSG_DO_NOT_SWITCH_OFF" "$MSG_UPDATING_BBB" "$MSG_DO_NOT_SWITCH_OFF"
@@ -227,7 +231,6 @@ main() {
     touch /update/errors.log
     chmod +x /update/utilities/*
 
-    ls -l /update/
     configure_ssh
     stop_services
 
