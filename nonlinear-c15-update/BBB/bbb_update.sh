@@ -1,5 +1,4 @@
 #!/bin/sh
-
 #
 # Author: Anton Schmied
 # version : 2.0
@@ -12,6 +11,7 @@
 
 EPC_IP=$1
 BBB_IP=$2
+OLD_MACHINE_ID=$(cat /etc/machine-id)
 
 report_and_quit(){
     printf "$1" >> /update/errors.log
@@ -25,8 +25,7 @@ executeAsRoot() {
 }
 
 check_preconditions(){
-    if [ -e /settings.xml ] &&
-        [ ! -z "$EPC_IP" ] &&
+    if [ ! -z "$EPC_IP" ] &&
         ping -c1 $EPC_IP 1>&2 > /dev/null &&
         executeAsRoot "exit" &&
         executeAsRoot "mountpoint -q /persistent"; then
@@ -36,8 +35,8 @@ check_preconditions(){
 }
 
 move_files(){
-    if ! check_preconditions; then
-        return 1
+    if [ -e /settings.xml ] && ! check_preconditions; then
+        report_and_quit "E59 BBB update: Files on BBB present, but conditions are bad ..." "59"
     fi
 
     executeAsRoot "systemctl stop playground"
@@ -52,7 +51,7 @@ move_files(){
     if [ -e /settings.xml ]; then
         executeAsRoot "scp root@$BBB_IP:/settings.xml /persistent/settings.xml" \
         && rm /settings.xml
-        if [ $? -ne 0 ]; then report_and_quit "E56 BBB update: Moving Settings to ePC failed ..." "56"; fi
+        if [ $? -ne 0 ]; then report_and_quit "E56 BBB update: Moving settings to ePC failed ..." "56"; fi
     fi
 
     if [ -d /internalstorage/calibration ] && [ "$(ls -A /internalstorage/calibration/)" ]; then
@@ -66,11 +65,15 @@ move_files(){
 }
 
 update(){
+    pwd
     mkdir /update/BBB/rootfs \
     && gzip -dc /update/BBB/rootfs.tar.gz | tar -C /update/BBB/rootfs -xf - \
-    && LD_LIBRARY_PATH=/update/utilities /update/utilities/rsync -cax --exclude 'etc/hostapd.conf' -f 'P update/' --delete /update/BBB/rootfs/ / \
+    && LD_LIBRARY_PATH=/update/utilities /update/utilities/rsync -cavx --exclude '/etc/hostapd.conf' --exclude '/var/log/journal' --exclude '/update' / \
     && chown -R root.root /update
     if [ $? -ne 0 ]; then report_and_quit "E58 BBB update: Syncing rootfs failed ..." "58"; fi
+    mkdir /var/log/journal/$(cat /etc/machine-id)
+    mv /var/log/journal/$OLD_MACHINE_ID/* /var/log/journal/$(cat /etc/machine-id)
+    rm -rf /var/log/journal/$OLD_MACHINE_ID
     rm -rf /update/BBB/rootfs/*
     rm -rf /update/BBB/rootfs
 }
@@ -83,6 +86,3 @@ main() {
 }
 
 main
-
-
-
