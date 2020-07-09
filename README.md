@@ -1,15 +1,17 @@
 # C15 Win2Lin Upgrade (Master 1.7)
 
 The upgrade is based on the scripts from the C15 Project (C15/build-tools/create-c15-update/).
-The run.sh script additionally checks, whether the C15 is currently running on Windows and whether
-the ePC is set up with 'an additonial 'nonlinear' bootloader, which is essential for the upgrade.
+The run.sh script additionally checks the following in the epc_upgrade function
+- can Windows be ssh-ed from the BBB at all
+- is Pascal's nonlinear bootloader installed
+- is nonlinear-c15-major-upgrade.tar present on the stick
+- is enough space on the USB sitck (the upgrade is going to be unpacked on the stick, since the BBB soes not offer enough space)
+- is the USB stick format 'vfat'
+- is the major upgrade corrupt
 
-After the upgrade the update to the current 1.7 master is carried out.
+After the check the 'upgrade50Plus.sh' carries out the upagrde. If any of these steps fail, the C15 will prompt the User that the Upgrade failed. If successful the update to the current 1.7 master is carried out. The 
 
-If at any time the upgrade or the update was unsuccessful, the C15 will not reboot and will inform the User, of what shoudl be done next.
-
-
-## Creating the ePC Partitions and the upgrade.tar
+## Creating the ePC Partitions and the upgrade.tar 
 1) In the C15 Project switch BUILD_EPC=ON and select the target --epc-nonlinux-vm-installation
 This will create a 'disk.vmdk' file in your previously specified 'build' directory und '/build-tools/epc/'
 
