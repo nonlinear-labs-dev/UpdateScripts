@@ -275,7 +275,6 @@ install_grub() {
 
 merge_partitions() {
     pretty "" "Clean up..." "merging partitions." "Clean up..." "merging parts"
-#    executeAsRoot "reboot" || quit "" "Merge reboot failed..." "$MSG_FAILED" "Merge reboot failed..." "$MSG_FAILED"
     executeAsRoot "reboot"
     wait4response || quit "" "Reboot timed out..." "$MSG_FAILED" "Reboot timed out..." "$MSG_FAILED"
 
@@ -289,7 +288,6 @@ merge_partitions() {
 
 reboot_device() {
     pretty "" "Rebooting ePC..." "" "Rebooting ePC..." ""
-#    executeAsRoot "reboot" || quit "" "Reboot failed..." "$MSG_FAILED" "Reboot failed..." "$MSG_FAILED"
     executeAsRoot "reboot"
     wait4response || quit "" "Reboot timed out..." "$MSG_FAILED" "Reboot timed out..." "$MSG_FAILED"
     pretty "" "Rebooting ePC..." "$MSG_DONE" "Rebooting ePC..." "$MSG_DONE"

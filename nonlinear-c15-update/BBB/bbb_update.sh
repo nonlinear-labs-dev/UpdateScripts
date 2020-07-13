@@ -1,6 +1,5 @@
 #!/bin/sh
-#
-# Author: Anton Schmied
+
 # version : 2.0
 #
 # ----------- install a BBB Updates from USB-Stick ---------
@@ -65,7 +64,6 @@ move_files(){
 }
 
 update(){
-    rm -rf /update/BBB/rootfs
     mkdir /update/BBB/rootfs \
     && gzip -dc /update/BBB/rootfs.tar.gz | tar -C /update/BBB/rootfs -xf - \
     && LD_LIBRARY_PATH=/update/utilities /update/utilities/rsync -cax --exclude '/etc/hostapd.conf' --exclude '/var/log/journal' --exclude '/update' --delete /update/BBB/rootfs/ / \
@@ -74,6 +72,7 @@ update(){
     mkdir /var/log/journal/$(cat /etc/machine-id)
     mv /var/log/journal/$OLD_MACHINE_ID/* /var/log/journal/$(cat /etc/machine-id)
     rm -rf /var/log/journal/$OLD_MACHINE_ID
+    rm -rf /update/BBB/rootfs/*
     rm -rf /update/BBB/rootfs
 }
 
@@ -85,3 +84,6 @@ main() {
 }
 
 main
+
+
+

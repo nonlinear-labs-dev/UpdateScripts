@@ -1,4 +1,5 @@
 #!/bin/sh
+# version : 2.1
 
 EPC_IP=192.168.10.10
 BBB_IP=192.168.10.11
@@ -35,6 +36,11 @@ freeze() {
     while true; do
         sleep 1
     done
+}
+
+determine_termination() {
+    cat /nonlinear/scripts/install-update.sh | grep 'version : 1.0' \
+        && freeze || exit 1
 }
 
 configure_ssh() {
@@ -133,7 +139,7 @@ epc_upgrade() {
             return 1
         fi
 
-        pretty "" "unpacking files..." "$MSG_DO_NOT_SWITCH_OFF" "unpacking files..." "$MSG_DO_NOT_SWITCH_OFF"
+        pretty "" "Unpacking files..." "$MSG_DO_NOT_SWITCH_OFF" "Unpacking files..." "$MSG_DO_NOT_SWITCH_OFF"
         tar -C /mnt/usb-stick/upgrade -xvf /mnt/usb-stick/upgrade/win2lin.tar
         rm -rf /mnt/usb-stick/upgrade/win2lin.tar
         cd /mnt/usb-stick/upgrade
@@ -193,6 +199,7 @@ bbb_update() {
         return 1;
     fi
 
+    configure_ssh
     pretty "" "$MSG_UPDATING_BBB" "$MSG_DONE" "$MSG_UPDATING_BBB" "$MSG_DONE"
     sleep 2
     return 0
@@ -237,7 +244,7 @@ main() {
     if ! epc_upgrade; then
         cp /update/errors.log /mnt/usb-stick/nonlinear-c15-update.log.txt
         cd /update && rm -r /mnt/usb-stick/upgrade
-        freeze
+        determine_termination
     fi
 
     cd /update && rm -r /mnt/usb-stick/upgrade
@@ -252,11 +259,10 @@ main() {
     if [ $(wc -c /update/errors.log | awk '{print $1}') -ne 0 ]; then
         cp /update/errors.log /mnt/usb-stick/nonlinear-c15-update.log.txt
         pretty "" "$MSG_UPDATING_C15 $MSG_FAILED" "$MSG_CHECK_LOG" "$MSG_UPDATING_C15 $MSG_FAILED" "$MSG_CHECK_LOG"
-        freeze
+        determine_termination
     fi
 
     pretty "" "$MSG_UPDATING_C15 $MSG_DONE" "$MSG_RESTART" "$MSG_UPDATING_C15 $MSG_DONE" "$MSG_RESTART"
-    freeze
     return 0
 }
 
